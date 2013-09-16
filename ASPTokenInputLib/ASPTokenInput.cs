@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
+using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
 using System.Web.UI;
 using System.ComponentModel;
@@ -7,7 +9,9 @@ using System.Web.Script.Serialization;
 
 namespace ASPTokenInputLib
 {
-    public class ASPTokenInput : CompositeControl, IPostBackEventHandler
+    [ToolboxBitmap(typeof(TextBox))]
+    [ToolboxData("<{0}:TokenInput runat=server></{0}:TokenInput>")]
+    public class TokenInput : CompositeControl, IPostBackEventHandler
     {
         [Serializable]
         public class Item
@@ -53,111 +57,153 @@ namespace ASPTokenInputLib
         TextBox _txtText;
         HiddenField _hfPersist;
 
-        public ASPTokenInput()
+        public TokenInput()
         {
-            
+            this.Items = new List<Item>();
         }
-        
+
         protected override void CreateChildControls()
         {
             base.CreateChildControls();
 
             this.Controls.Clear();
-            _txtText = new TextBox();
-            this.Controls.Add(_txtText);
 
+            this.Controls.Add(_txtText);
+            this.Controls.Add(_hfPersist);
+        }
+
+        protected override void OnInit(EventArgs e)
+        {
+            base.OnInit(e);
+
+            //Register Includes
+            ScriptRegister sr = new ScriptRegister();
+            sr.RegisterScripts(Page);
+
+            //init controls
+            _txtText = new TextBox();
             _hfPersist = new HiddenField();
-            this.Controls.Add(_hfPersist);            
+
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-            if (!this.Page.IsPostBack)
-                this.Items = new List<Item>();
-            else if (String.IsNullOrEmpty(_hfPersist.Value))
-                this.Items = new List<Item>();
+            if (Page.IsPostBack)
+            {
+                if (String.IsNullOrEmpty(_hfPersist.Value))
+                    this.Items = new List<Item>();
+                else
+                    this.Items = (List<Item>)new JavaScriptSerializer().Deserialize<IList<Item>>(_hfPersist.Value);
+            }
             else
-                this.Items = (List<Item>)new JavaScriptSerializer().Deserialize<IList<Item>>(_hfPersist.Value);
+            {
+                _hfPersist.Value = new JavaScriptSerializer().Serialize(this.Items.ToArray());
+            }
+
         }
 
         protected override void OnPreRender(EventArgs e)
         {
             base.OnPreRender(e);
-                                    
-            if (!String.IsNullOrEmpty(this.RequestHandlerPath))
+
+            if (!DesignMode)
             {
-                string handlerPath = this.Page.ResolveUrl(this.RequestHandlerPath);
-
-                JSONObject opts = new JSONObject();
-
-                opts.AddValueMember("hintText", this.HintText, null);
-                opts.AddValueMember("noResultsText", this.NoResultsText, null);
-                opts.AddValueMember("searchingText", this.SearchingText, null);
-                opts.AddValueMember("deleteText", this.DeleteText, null);
-                opts.AddValueMember("theme", this.Theme, null);
-                opts.AddValueMember("animateDropdown", this.AnimateDropdown, null);
-                opts.AddValueMember("searchDelay", this.SearchDelay, null);
-                opts.AddValueMember("minChars", this.MinChars, null);
-                opts.AddValueMember("tokenLimit", this.TokenLimit, null);
-                opts.AddValueMember("preventDuplicates", this.PreventDuplicates, null);
-                opts.AddValueMember("jsonContainer", this.JSONContainer, null);
-                opts.AddValueMember("method", this.Method, null);
-                opts.AddValueMember("queryParam", this.QueryParam, null);
-                opts.AddValueMember("crossDomain", this.CrossDomain, null);
-
-                if (this.Items.Count > 0)
+                //Include Css For tokenInput
+                bool cssFileIncluded = false;
+                foreach (Control c in Page.Header.Controls)
                 {
-                    string prePopulate = new JavaScriptSerializer().Serialize(this.Items.ToArray());
-                    opts.AddReferenceMember("prePopulate", prePopulate);
-                }               
+                    //check if another timepicker on the page already registered this
+                    if (c.ID != "tokenInputCss") continue;
+                    cssFileIncluded = true;
+                    break;
+                }
+                if (!cssFileIncluded)
+                {
+                    HtmlGenericControl csslink = new HtmlGenericControl("link");
+                    csslink.ID = "tokenInputCss";
+                    csslink.Attributes.Add("href", Page.ClientScript.GetWebResourceUrl(typeof(ScriptRegister), "ASPTokenInputLib.styles.token-input.min.css"));
+                    csslink.Attributes.Add("type", "text/css");
+                    csslink.Attributes.Add("rel", "stylesheet");
+                    Page.Header.Controls.Add(csslink);
+                }
 
-                string postBackCall = "";
-                if (this.PostbackOnItemAdded)
-                    postBackCall = "__doPostBack('" + this.UniqueID + "', JSON.stringify({ eventName:'Add', id:item.id, name:item.name }));";
+                if (!String.IsNullOrEmpty(this.RequestHandlerPath))
+                {
+                    string handlerPath = this.Page.ResolveUrl(this.RequestHandlerPath);
 
-                opts.AddReferenceMember("onAdd", "function(item){ saveTokenInputSelections('" + this.ClientID + "', '" + _txtText.ClientID + "', '" + _hfPersist.ClientID + "'); \n" + postBackCall + " }");
+                    JSONObject opts = new JSONObject();
 
-                postBackCall = "";
-                if (this.PostbackOnItemRemoved)
-                    postBackCall = "__doPostBack('" + this.UniqueID + "', JSON.stringify({ eventName:'Remove', id:item.id, name:item.name }));";
+                    opts.AddValueMember("hintText", this.HintText, null);
+                    opts.AddValueMember("noResultsText", this.NoResultsText, null);
+                    opts.AddValueMember("searchingText", this.SearchingText, null);
+                    opts.AddValueMember("deleteText", this.DeleteText, null);
+                    opts.AddValueMember("theme", this.Theme, null);
+                    opts.AddValueMember("animateDropdown", this.AnimateDropdown, null);
+                    opts.AddValueMember("searchDelay", this.SearchDelay, null);
+                    opts.AddValueMember("minChars", this.MinChars, null);
+                    opts.AddValueMember("tokenLimit", this.TokenLimit, null);
+                    opts.AddValueMember("preventDuplicates", this.PreventDuplicates, null);
+                    opts.AddValueMember("jsonContainer", this.JSONContainer, null);
+                    opts.AddValueMember("method", this.Method, null);
+                    opts.AddValueMember("queryParam", this.QueryParam, null);
+                    opts.AddValueMember("crossDomain", this.CrossDomain, null);
 
-                opts.AddReferenceMember("onDelete", "function(item){ saveTokenInputSelections('" + this.ClientID + "', '" + _txtText.ClientID + "', '" + _hfPersist.ClientID + "'); \n" + postBackCall + " }");
+                    if (this.Items.Count > 0)
+                    {
+                        string prePopulate = new JavaScriptSerializer().Serialize(this.Items.ToArray());
+                        opts.AddReferenceMember("prePopulate", prePopulate);
+                    }
 
-                string initializeTokenInputScript = "$('#" + _txtText.ClientID + "').tokenInput('" + handlerPath + "', " + opts.ToString() + ");"; // loadTokenInputSelections('" + this.ClientID + "', '" + _txtText.ClientID + "', '" + _hfPersist.ClientID + "');";
+                    string postBackCall = "";
+                    if (this.PostbackOnItemAdded)
+                        postBackCall = "__doPostBack('" + this.UniqueID + "', JSON.stringify({ eventName:'Add', id:item.id, name:item.name }));";
 
-                string initializeTokenInputScriptKey = "ASPTokenInputInitializeScript_" + this.ClientID;
-                ScriptManager.RegisterStartupScript(this, this.GetType(), initializeTokenInputScriptKey, initializeTokenInputScript, true);
+                    opts.AddReferenceMember("onAdd", "function(item){ saveTokenInputSelections('" + this.ClientID + "', '" + _txtText.ClientID + "', '" + _hfPersist.ClientID + "'); \n" + postBackCall + " }");
 
-                const string persistanceScript = "function saveTokenInputSelections(tokenContainerID, tokenTextBoxID, persistanceFieldID) { \n"
-                                           + "var ids = []; \n"
-                                           + "ids = $('#' + tokenTextBoxID).val().split(','); \n"
-                                           + "if (ids.length > 0) { \n"
-                                           + "var valElements = $('#' + tokenContainerID + ' p'); \n"
+                    postBackCall = "";
+                    if (this.PostbackOnItemRemoved)
+                        postBackCall = "__doPostBack('" + this.UniqueID + "', JSON.stringify({ eventName:'Remove', id:item.id, name:item.name }));";
 
-                                           + "if (valElements.length == ids.length) { \n"
-                                           + "var index = 0; \n"
-                                           + "var names = []; \n"
-                                           + "for (index = 0; index < valElements.length; index++) \n"
-                                           + "names[index] = $(valElements[index]).text(); \n"
+                    opts.AddReferenceMember("onDelete", "function(item){ saveTokenInputSelections('" + this.ClientID + "', '" + _txtText.ClientID + "', '" + _hfPersist.ClientID + "'); \n" + postBackCall + " }");
 
-                                           + "var jsonSelections = []; \n"
-                                           + "for (index = 0; index < ids.length; index++) \n"
-                                           + "jsonSelections[index] = { id: ids[index], name: names[index] }; \n"
+                    string initializeTokenInputScript = "$('#" + _txtText.ClientID + "').tokenInput('" + handlerPath + "', " + opts.ToString() + ");"; // loadTokenInputSelections('" + this.ClientID + "', '" + _txtText.ClientID + "', '" + _hfPersist.ClientID + "');";
 
-                                           + "var jsonString = JSON.stringify(jsonSelections); \n"
-                                           + "$('#' + persistanceFieldID).val(jsonString); \n"
-                                           + "} \n"
-                                           + "else \n"
-                                           + "$('#' + persistanceFieldID).val(''); \n"
-                                           + "} \n"
-                                           + "else \n"
-                                           + "$('#' + persistanceFieldID).val(''); \n"
-                                           + "} \n";
+                    string initializeTokenInputScriptKey = "ASPTokenInputInitializeScript_" + this.ClientID;
+                    ScriptManager.RegisterStartupScript(this, this.GetType(), initializeTokenInputScriptKey, initializeTokenInputScript, true);
 
-                ScriptManager.RegisterClientScriptBlock(this.Page, this.Page.GetType(), "ASPTokenInputPersistanceManagementScript", persistanceScript, true);
+                    const string persistanceScript = "function saveTokenInputSelections(tokenContainerID, tokenTextBoxID, persistanceFieldID) { \n"
+                                               + "var ids = []; \n"
+                                               + "ids = $('#' + tokenTextBoxID).val().split('|'); \n"
+                                               + "if (ids.length > 0) { \n"
+                                               + "var valElements = $('#' + tokenContainerID + ' p'); \n"
+
+                                               + "if (valElements.length == ids.length) { \n"
+                                               + "var index = 0; \n"
+                                               + "var names = []; \n"
+                                               + "for (index = 0; index < valElements.length; index++) \n"
+                                               + "names[index] = $(valElements[index]).text(); \n"
+
+                                               + "var jsonSelections = []; \n"
+                                               + "for (index = 0; index < ids.length; index++) \n"
+                                               + "jsonSelections[index] = { id: ids[index], name: names[index] }; \n"
+
+                                               + "var jsonString = JSON.stringify(jsonSelections); \n"
+                                               + "$('#' + persistanceFieldID).val(jsonString); \n"
+                                               + "} \n"
+                                               + "else \n"
+                                               + "$('#' + persistanceFieldID).val(''); \n"
+                                               + "} \n"
+                                               + "else \n"
+                                               + "$('#' + persistanceFieldID).val(''); \n"
+                                               + "} \n";
+
+                    ScriptManager.RegisterClientScriptBlock(this.Page, typeof(TokenInput), "ASPTokenInputPersistanceManagementScript", persistanceScript, true);
+                }
             }
+
+
         }
 
         protected override void RecreateChildControls()
@@ -190,7 +236,7 @@ namespace ASPTokenInputLib
         public List<Item> Items
         {
             get;
-            private set;
+            set;
         }
 
         [Browsable(true)]
@@ -281,7 +327,7 @@ namespace ASPTokenInputLib
         {
             get { return (int?)this.ViewState["TokenLimit"]; }
             set { this.ViewState["TokenLimit"] = value; }
-        }        
+        }
         [Browsable(true)]
         public bool? PreventDuplicates
         {

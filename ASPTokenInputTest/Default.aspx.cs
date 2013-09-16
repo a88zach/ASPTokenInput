@@ -39,17 +39,17 @@ namespace ASPTokenInputTest
             lbList2.Items.Add("Partial postback triggered");
         }
 
-        protected void tiTest1_ListChanged(object sender, ASPTokenInput.ListChangedEventArgs e)
+        protected void tiTest1_ListChanged(object sender, TokenInput.ListChangedEventArgs e)
         {
-            if (e.Action == ASPTokenInput.ListChangeActions.Add)
+            if (e.Action == TokenInput.ListChangeActions.Add)
                 lbList1.Items.Add("Added Item id:" + Convert.ToString(e.Item.id) + " and name: " + e.Item.name);
             else
                 lbList1.Items.Add("Removed Item id:" + Convert.ToString(e.Item.id) + " and name: " + e.Item.name);
         }
 
-        protected void tiTest2_ListChanged(object sender, ASPTokenInput.ListChangedEventArgs e)
+        protected void tiTest2_ListChanged(object sender, TokenInput.ListChangedEventArgs e)
         {
-            if (e.Action == ASPTokenInput.ListChangeActions.Add)
+            if (e.Action == TokenInput.ListChangeActions.Add)
                 lbList2.Items.Add("Added Item id:" + Convert.ToString(e.Item.id) + " and name: " + e.Item.name);
             else
                 lbList2.Items.Add("Removed Item id:" + Convert.ToString(e.Item.id) + " and name: " + e.Item.name);

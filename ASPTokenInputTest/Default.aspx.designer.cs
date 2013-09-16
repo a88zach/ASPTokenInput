@@ -28,7 +28,7 @@ namespace ASPTokenInputTest {
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::ASPTokenInputLib.ASPTokenInput tiTest1;
+        protected global::ASPTokenInputLib.TokenInput tiTest1;
         
         /// <summary>
         /// lbList1 control.
@@ -64,7 +64,7 @@ namespace ASPTokenInputTest {
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::ASPTokenInputLib.ASPTokenInput tiTest2;
+        protected global::ASPTokenInputLib.TokenInput tiTest2;
         
         /// <summary>
         /// lbList2 control.
